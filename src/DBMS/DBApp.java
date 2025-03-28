@@ -1,16 +1,16 @@
 package DBMS;
 
-import java.io.File;
-import java.io.FileWriter;
+// import java.io.File;
+// import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
+// import java.util.Arrays;
+// import java.util.Collection;
+// import java.util.Collections;
 
-import org.junit.Test;
+// import org.junit.Test;
 
-import javafx.scene.control.Tab;
+// import javafx.scene.control.Tab;
 
 public class DBApp
 {
@@ -32,20 +32,26 @@ public class DBApp
 	public static ArrayList<String []> select(String tableName)
 	{
 		Table table = FileManager.loadTable(tableName);
-		return table.select();
+		ArrayList<String []> x =  table.select();
+		FileManager.storeTable(tableName, table);
+		return x;
 	}
 	
 	public static ArrayList<String []> select(String tableName, int pageNumber, int recordNumber)
 	{
 		Table table = FileManager.loadTable(tableName);
-		return table.select(pageNumber, recordNumber);
+		ArrayList <String []> x =  table.select(pageNumber, recordNumber);
+		FileManager.storeTable(tableName, table);
+		return x;
 	}
 	
 	public static ArrayList<String []> select(String tableName, String[] cols, String[] vals)
 	{
 		
 		Table table = FileManager.loadTable(tableName);
-		return table.select(cols, vals);
+		ArrayList<String []> x = table.select(cols, vals);
+		FileManager.storeTable(tableName, table);
+		return x;
 	}
 	
 	public static String getFullTrace(String tableName)
@@ -79,20 +85,14 @@ public class DBApp
 		insert("student", r5);
 		System.out.println("Output of selecting the whole table content:");
 		ArrayList<String[]> result1 = select("student");
-		ArrayList<String[]> result4 = select("student");
 
 		for (String[] array : result1) {
 			for (String str : array) {
-			System.out.print(str + " ");
+				System.out.print(str + " ");
 			}
 			System.out.println();
-			}
-			for (String[] array : result4) {
-				for (String str : array) {
-				System.out.print(str + " ");
-				}
-				System.out.println();
-				}
+		}
+	
 		System.out.println("--------------------------------");
 		System.out.println("Output of selecting the output by position:");
 		ArrayList<String[]> result2 = select("student", 1, 1);
