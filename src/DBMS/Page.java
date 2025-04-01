@@ -27,7 +27,7 @@ public class Page implements Serializable
         }
         return false;
     }
-    public ArrayList<String []> select()
+    public ArrayList<String []> selectPage()
     {
         return records;
     }

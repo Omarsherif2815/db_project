@@ -20,9 +20,9 @@ public class Table implements Serializable {
 
         String s = "[ ";
         for (int i = 0; i < columnsNames.length - 1; i++) {
-            s += columnsNames[i].toLowerCase() + ", ";
+            s += columnsNames[i] + ", ";
         }
-        s += columnsNames[columnsNames.length - 1].toLowerCase() + "]";
+        s += columnsNames[columnsNames.length - 1] + "]";
 
         fullTrace = "Table created name: " + tableName + " columns names: " + s + "\n";
         lastTrace = fullTrace;
@@ -56,7 +56,7 @@ public class Table implements Serializable {
         for (int i = 0; i < pageCount; i++) {
             Page page = FileManager.loadTablePage(tableName, i);
             if (page != null) {
-                result.addAll(page.select());
+                result.addAll(page.selectPage());
             }
         }
 
@@ -98,7 +98,7 @@ public class Table implements Serializable {
             int matchCount = 0;
             
             if (page != null) {
-                for (String[] record : page.select()) {
+                for (String[] record : page.selectPage()) {
                     boolean match = true;
                     for (int j = 0; j < cols.length; j++) {
                         int columnIndex = -1;
