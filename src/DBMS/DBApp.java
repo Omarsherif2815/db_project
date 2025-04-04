@@ -14,7 +14,7 @@ import java.util.ArrayList;
 
 public class DBApp
 {
-	static int dataPageSize = 2;
+	static int dataPageSize = -100;
 	
 	public static void createTable(String tableName, String[] columnsNames)
 	{

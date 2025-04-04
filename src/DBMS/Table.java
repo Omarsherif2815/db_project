@@ -31,7 +31,7 @@ public class Table implements Serializable {
     public void insert(String[] record) {
         long startTime = System.currentTimeMillis();
 
-        Page page = FileManager.loadTablePage(tableName, pageCount - 1);
+        Page page = (pageCount > 0) ? FileManager.loadTablePage(tableName, pageCount - 1) : null;
         if (page == null || page.isFull()) {
             page = new Page(dataPageSize);
             FileManager.storeTablePage(tableName, pageCount, page);
