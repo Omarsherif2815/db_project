@@ -1,39 +1,33 @@
 package DBMS;
 
 import java.io.Serializable;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 
+@SuppressWarnings("unused")
 public class Page implements Serializable
 {
-    private ArrayList<String[]> records;
-    private int maxRecords;
+	private ArrayList<String []> data;
+    private int maxNumberOfRecords; 
 
-    public Page(int maxRecords)
+    public Page()
     {
-        this.maxRecords = maxRecords;
-        records = new ArrayList<String[]>();
-    }
-
-    public boolean isFull()
-    {
-        return records.size() == maxRecords;
+        data = new ArrayList<String[]>();
+        maxNumberOfRecords = DBApp.dataPageSize;
     }
 
-    public boolean insert(String[] record)
-    {
-        if(!isFull()){
-            records.add(record);
-            return true;
-        }
-        return false;
+    public boolean isFull(){
+        return data.size() == maxNumberOfRecords;
     }
-    public ArrayList<String []> selectPage()
-    {
-        return records;
+
+    public void insert(String[] record){
+        data.add(record);
     }
-    public String[] select(int recordNumber)
-    {
-        return records.get(recordNumber);
+
+    public ArrayList<String[]> getRecords(){
+        return data;
     }
-    
+    public String[] getRecordByNumber(int recordNumber){
+        return data.get(recordNumber);
+    }
 }

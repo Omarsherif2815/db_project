@@ -686,11 +686,11 @@ public class DBAppTests
 		//record2: [a5, b1, c2]
 		//record3: [a7, b1, c1]
 		//record4: [a9, b1, c0]
-		assertTrue("Conditional selection should return the correct number of records.", tableSelect0.size() == 80);
+		assertTrue("Conditional selection should return the correct number of records. Expected: 80, Found: " + tableSelect0.size(), tableSelect0.size() == 80);
 		ArrayList<String> tableSelectStrings0 = new ArrayList<String>();
 		for(int i = 0; i < tableSelect0.size(); i++)
 			tableSelectStrings0.add(Arrays.toString(tableSelect0.get(i)));
-		assertTrue("Conditional selection should return the correct inserted record.", tableSelectStrings0.contains(Arrays.toString(new String[]{"a1","b1","c1"})));
+		assertTrue("Conditional selection should return the correct inserted record: [a1, b1, c1]", tableSelectStrings0.contains(Arrays.toString(new String[]{"a1","b1","c1"})));
 		assertTrue("Conditional selection should return the correct inserted record.", tableSelectStrings0.contains(Arrays.toString(new String[]{"a3","b1","c0"})));
 		assertTrue("Conditional selection should return the correct inserted record.", tableSelectStrings0.contains(Arrays.toString(new String[]{"a5","b1","c2"})));
 		assertTrue("Conditional selection should return the correct inserted record.", tableSelectStrings0.contains(Arrays.toString(new String[]{"a7","b1","c1"})));
@@ -729,6 +729,11 @@ public class DBAppTests
 		//record2: [a4, b0]
 		//record3: [a6, b0]
 		//record4: [a8, b0]
+		System.out.println("tableSelect1.size() = " + tableSelect1.size());
+		System.out.println("tableSelect1 = " + tableSelect1.get(0)[0]);
+		System.out.println("tableSelect1 = " + tableSelect1.get(0)[1]);
+		System.out.println("tableSelect1 = " + tableSelect1.get(1)[0]);
+		System.out.println("tableSelect1 = " + tableSelect1.get(1)[1]);
 		assertTrue("Conditional selection should return the correct number of records.", tableSelect1.size() == 163);
 		ArrayList<String> tableSelectStrings1 = new ArrayList<String>();
 		for(int i = 0; i < tableSelect1.size(); i++)
@@ -772,6 +777,7 @@ public class DBAppTests
 		//record2: [a5, b1, c2, d1, e0, f5]
 		//record3: [a7, b1, c1, d3, e2, f1]
 		//record4: [a9, b1, c0, d1, e4, f3]
+		System.out.println("tableSelect2.size() = " + tableSelect2.size());
 		assertTrue("Conditional selection should return the correct number of records.", tableSelect2.size() == 211);
 		ArrayList<String> tableSelectStrings2 = new ArrayList<String>();
 		for(int i = 0; i < tableSelect2.size(); i++)
