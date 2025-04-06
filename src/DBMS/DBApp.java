@@ -24,15 +24,20 @@ public class DBApp
 	public static void insert(String tableName, String[] record)
 	{
 		Table table = FileManager.loadTable(tableName);
-		table.insert(record);
-		FileManager.storeTable(tableName, table);
+		if(table!=null){
+			table.insert(record);
+			FileManager.storeTable(tableName, table);
+		}
 	}
 	
 	public static ArrayList<String []> select(String tableName)
 	{
 		Table table = FileManager.loadTable(tableName);
-		ArrayList<String[]> result = table.getRecords();
-		FileManager.storeTable(tableName, table);
+		ArrayList<String[]> result = new ArrayList<String[]>();
+		if(table!=null){
+			result = table.getRecords();
+			FileManager.storeTable(tableName, table);
+		}
 		return result;
 		
 	}
@@ -40,31 +45,44 @@ public class DBApp
 	public static ArrayList<String []> select(String tableName, int pageNumber, int recordNumber)
 	{
 		Table table = FileManager.loadTable(tableName);
-		ArrayList<String[]> result = table.select(pageNumber,recordNumber);
-		FileManager.storeTable(tableName, table);
+		ArrayList<String[]> result = new ArrayList<String[]>();
+		if(table!=null){
+			result = table.select(pageNumber, recordNumber);
+			FileManager.storeTable(tableName, table);
+		}
 		return result;
 	}
 	
 	public static ArrayList<String []> select(String tableName, String[] cols, String[] vals)
 	{
 		Table table = FileManager.loadTable(tableName);
-		ArrayList<String[]> result = table.select(cols,vals);
-		if(result.size() == 0){
-			System.out.println("invalid column name");
+		ArrayList<String[]> result = new ArrayList<String[]>();
+		if(table!=null){
+			if(result.size() == 0){
+				System.out.println("invalid column name");
+			}
+			FileManager.storeTable(tableName, table);
 		}
-		FileManager.storeTable(tableName, table);
 		return result;
 	}
 	
 	public static String getFullTrace(String tableName)
 	{
 		Table table = FileManager.loadTable(tableName);
+		if(table == null){
+			System.out.println("Table not found");
+			return null;
+		}
 		return table.getFullTrace();
 	}
 	
 	public static String getLastTrace(String tableName)
 	{
 		Table table = FileManager.loadTable(tableName);
+		if(table == null){
+			System.out.println("Table not found");
+			return null;
+		}
 		return table.getLastTrace();
 	}
 	

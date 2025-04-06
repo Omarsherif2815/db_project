@@ -987,7 +987,7 @@ public class DBAppTests
 	
 		int pageSelectPointer11 = genRandNum(pageCount1-1);
 		int recordSelectPointer11 = genRandNum(DBApp.dataPageSize-1);
-		if(pageSelectPointer11==pageCount1-1)
+		if(pageSelectPointer11==pageCount1-1)		
 			recordSelectPointer11 = genRandNum((39%DBApp.dataPageSize)-1);
 		DBApp.select("c6", pageSelectPointer11,recordSelectPointer11);
 	
