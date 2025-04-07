@@ -28,6 +28,6 @@ public class Page implements Serializable
         return data;
     }
     public String[] getRecordByNumber(int recordNumber){
-        return data.get(recordNumber);
+        return recordNumber <  data.size()? data.get(recordNumber) : null;
     }
 }

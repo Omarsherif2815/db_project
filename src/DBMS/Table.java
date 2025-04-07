@@ -57,16 +57,21 @@ public class Table implements Serializable
     }
     
     public ArrayList<String[]> select(int pageNumber, int recordNumber){
+        if(pageNumber < 0 || pageNumber >= currentPageCount || recordNumber < 0) 
+            return null;
         long startTime = System.currentTimeMillis();
         Page page = FileManager.loadTablePage(name, pageNumber);
         ArrayList<String[]> result = new ArrayList<String[]>();
         if(page!=null){
-        result.add(page.getRecordByNumber(recordNumber));
+            String[] record = page.getRecordByNumber(recordNumber);
+            if(record == null)
+                return null;
+            result.add(record);
 
-        lastTrace = "Select pointer page:"+pageNumber+", record:"+recordNumber+", total output count:"+result.size()+", execution time (mil):"+(System.currentTimeMillis()-startTime);
-        fullTrace += lastTrace+"\n";
+            lastTrace = "Select pointer page:"+pageNumber+", record:"+recordNumber+", total output count:"+result.size()+", execution time (mil):"+(System.currentTimeMillis()-startTime);
+            fullTrace += lastTrace+"\n";
         }
-        
+
         return result;
     }
     
