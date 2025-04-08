@@ -18,11 +18,11 @@ public class FileManager
 	
     public static boolean storeTable(String tableName, Table t)
 	{
-		try {
-			TimeUnit.MILLISECONDS.sleep(1);
-		} catch (InterruptedException e1) {
-			// TODO Auto-generated catch block
-		}
+		// try {
+		// 	TimeUnit.MILLISECONDS.sleep(1);
+		// } catch (InterruptedException e1) {
+		// 	// TODO Auto-generated catch block
+		// }
 		File tableDirectory = new File(directory, tableName);
 		tableDirectory.mkdirs();
 	    File fl = new File(tableDirectory, tableName+".db");
