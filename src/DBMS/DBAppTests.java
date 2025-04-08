@@ -1041,6 +1041,7 @@ public class DBAppTests
 	
 		String selectTrace1 = DBApp.getFullTrace("c6");
 		String[] selectTraceArray1 = selectTrace1.split("\n");
+		System.out.println("selectTraceArray1.length = " + selectTraceArray1.length);
 		assertTrue("Full trace should show the correct number of operations performed on a table.", selectTraceArray1.length == 56);
 		assertTrue("Last line in the full trace should report the number of pages and records correctly.", selectTraceArray1[selectTraceArray1.length-1].equals("Pages Count: "+pageCount1+", Records Count: 39"));
 		//--------------------------------------------------------------------------

@@ -81,7 +81,15 @@ public class Table implements Serializable
         ArrayList<String[]> result = new ArrayList<>();
         StringBuilder recordsPerPage = new StringBuilder("["); // String to store records per page info
         int totalMatch = 0;
-    
+        int[] columnindex = new int[cols.length];
+        for(int i = 0; i < cols.length; i++) {
+            for(int j = 0; j < columnNames.length; j++) {
+                if (columnNames[j].equalsIgnoreCase(cols[i])) {
+                    columnindex[i] = j;
+                    break;
+                }
+            }
+        }
         for (int i = 0; i < currentPageCount; i++) {
             Page page = FileManager.loadTablePage(name, i);
             int matchCount = 0;
@@ -92,17 +100,8 @@ public class Table implements Serializable
                 for (String[] record : pageRecords) {
                     boolean match = true;
                     for (int j = 0; j < cols.length && match; j++) {
-                        int columnIndex = -1;
-    
-                        // Find the corresponding column index
-                        for (int k = 0; k < columnNames.length; k++) {
-                            if (columnNames[k].equalsIgnoreCase(cols[j])) {
-                                columnIndex = k;
-                                break;
-                            }
-                        }
-    
-                        if (columnIndex == -1 || !record[columnIndex].equalsIgnoreCase(vals[j])) {
+                        int index = columnindex[j];
+                        if (!record[index].equalsIgnoreCase(vals[j])) {
                             match = false;
                             break;
                         }
