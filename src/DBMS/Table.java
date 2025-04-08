@@ -37,8 +37,8 @@ public class Table implements Serializable
         page.insert(record);
         recordCount++;
         FileManager.storeTablePage(name, currentPageCount-1, page);
-        lastTrace = "Inserted:"+Arrays.toString(record)+", at page number:"+ (currentPageCount-1) +", execution time (mil):"+ (System.currentTimeMillis()-startTime)+"\n";
-        fullTrace += lastTrace; 
+        lastTrace = "Inserted:"+Arrays.toString(record)+", at page number:"+ (currentPageCount-1) +", execution time (mil):"+ (System.currentTimeMillis()-startTime);
+        fullTrace += lastTrace + "\n"; 
     }
     
     public ArrayList<String[]> getRecords(){
