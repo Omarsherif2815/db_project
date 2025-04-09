@@ -69,11 +69,11 @@ public class FileManager
     
 	public static boolean storeTablePage(String tableName, int pageNumber, Page p)
 	{
-		try {
-			TimeUnit.MILLISECONDS.sleep(1);
-		} catch (InterruptedException e1) {
+		// try {
+		// 	TimeUnit.MILLISECONDS.sleep(1);
+		// } catch (InterruptedException e1) {
 			
-		}
+		// }
 		File tableDirectory = new File(directory, tableName);
 		tableDirectory.mkdir();
 	    File fl = new File(tableDirectory, ""+pageNumber+".db");
