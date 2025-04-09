@@ -23,6 +23,10 @@ public class DBApp
 	
 	public static void insert(String tableName, String[] record)
 	{
+		if(!Table.tableNames.contains(tableName)){
+			System.out.println("Table not found");
+			return;
+		}
 		Table table = FileManager.loadTable(tableName);
 		table.insert(record);
 		FileManager.storeTable(tableName, table);
@@ -30,6 +34,10 @@ public class DBApp
 	
 	public static ArrayList<String []> select(String tableName)
 	{
+		if(!Table.tableNames.contains(tableName)){
+			System.out.println("Table not found");
+			return null;
+		}
 		Table table = FileManager.loadTable(tableName);
 		ArrayList<String[]> result = table.getRecords();
 		FileManager.storeTable(tableName, table);
@@ -39,6 +47,10 @@ public class DBApp
 	
 	public static ArrayList<String []> select(String tableName, int pageNumber, int recordNumber)
 	{
+		if(!Table.tableNames.contains(tableName)){
+			System.out.println("Table not found");
+			return null;
+		}
 		Table table = FileManager.loadTable(tableName);
 		ArrayList<String[]> result = table.select(pageNumber,recordNumber);
 		FileManager.storeTable(tableName, table);
@@ -47,6 +59,10 @@ public class DBApp
 	
 	public static ArrayList<String []> select(String tableName, String[] cols, String[] vals)
 	{
+		if(!Table.tableNames.contains(tableName)){
+			System.out.println("Table not found");
+			return null;
+		}
 		Table table = FileManager.loadTable(tableName);
 		ArrayList<String[]> result = table.select(cols,vals);
 		if(result.size() == 0){
@@ -58,12 +74,20 @@ public class DBApp
 	
 	public static String getFullTrace(String tableName)
 	{
+		if(!Table.tableNames.contains(tableName)){
+			System.out.println("Table not found");
+			return null;
+		}
 		Table table = FileManager.loadTable(tableName);
 		return table.getFullTrace();
 	}
 	
 	public static String getLastTrace(String tableName)
 	{
+		if(!Table.tableNames.contains(tableName)){
+			System.out.println("Table not found");
+			return null;
+		}
 		Table table = FileManager.loadTable(tableName);
 		return table.getLastTrace();
 	}

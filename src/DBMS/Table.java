@@ -7,19 +7,19 @@ import java.util.Arrays;
 @SuppressWarnings("unused")
 public class Table implements Serializable
 {
+    static ArrayList<String> tableNames = new ArrayList<String>();
 	private String name;
     private String[] columnNames;
     private int currentPageCount = 0;
-    private String lastTrace;
-    private String fullTrace;
+    ArrayList<String> trace = new ArrayList<String>();
     private int recordCount = 0;
     
     public Table(String name, String[] columnNames)
     {
         this.name = name;
         this.columnNames = columnNames;
-        fullTrace = "Table created name:"+name+", columnsNames:"+Arrays.toString(columnNames)+"]\n";
-        lastTrace = fullTrace;
+        tableNames.add(name);
+        trace.add("Table created name:"+name+", columnsNames:"+Arrays.toString(columnNames));
     }
     
     public void insert(String[] record)
@@ -37,8 +37,8 @@ public class Table implements Serializable
         page.insert(record);
         recordCount++;
         FileManager.storeTablePage(name, currentPageCount-1, page);
-        lastTrace = "Inserted:"+Arrays.toString(record)+", at page number:"+ (currentPageCount-1) +", execution time (mil):"+ (System.currentTimeMillis()-startTime);
-        fullTrace += lastTrace + "\n"; 
+        trace.add("Inserted:"+Arrays.toString(record)+", at page number:"+ (currentPageCount-1) +", execution time (mil):"+ (System.currentTimeMillis()-startTime)); 
+        
     }
     
     public ArrayList<String[]> getRecords(){
@@ -50,27 +50,18 @@ public class Table implements Serializable
             if(p!=null)
                 result.addAll(p.getRecords());
         }
-        lastTrace = "Select all pages:"+currentPageCount+", records:"+recordCount+", execution time (mil):"+(System.currentTimeMillis()-startTime);
-        fullTrace += lastTrace+"\n";
-
+        trace.add("Select all pages:"+currentPageCount+", records:"+recordCount+", execution time (mil):"+(System.currentTimeMillis()-startTime));
         return result;
     }
     
     public ArrayList<String[]> select(int pageNumber, int recordNumber){
-        if(pageNumber < 0 || pageNumber >= currentPageCount || recordNumber < 0) 
-            return null;
         long startTime = System.currentTimeMillis();
         Page page = FileManager.loadTablePage(name, pageNumber);
         ArrayList<String[]> result = new ArrayList<String[]>();
         if(page!=null){
-            String[] record = page.getRecordByNumber(recordNumber);
-            if(record == null)
-                return null;
-            result.add(record);
-
-            lastTrace = "Select pointer page:"+pageNumber+", record:"+recordNumber+", total output count:"+result.size()+", execution time (mil):"+(System.currentTimeMillis()-startTime);
-            fullTrace += lastTrace+"\n";
+            result.add(page.getRecordByNumber(recordNumber)); 
         }
+        trace.add("Select pointer page:"+pageNumber+", record:"+recordNumber+", total output count:"+result.size()+", execution time (mil):"+(System.currentTimeMillis()-startTime));
 
         return result;
     }
@@ -79,30 +70,29 @@ public class Table implements Serializable
         long startTime = System.currentTimeMillis();
     
         ArrayList<String[]> result = new ArrayList<>();
-        StringBuilder recordsPerPage = new StringBuilder("["); // String to store records per page info
+        StringBuilder recordsPerPage = new StringBuilder("["); 
         int totalMatch = 0;
-    
+        int[] columnindex = new int[cols.length];
+        for(int i = 0; i < cols.length; i++) {
+            for(int j = 0; j < columnNames.length; j++) {
+                if (columnNames[j].equalsIgnoreCase(cols[i])) {
+                    columnindex[i] = j;
+                    break;
+                }
+            }
+        }
         for (int i = 0; i < currentPageCount; i++) {
             Page page = FileManager.loadTablePage(name, i);
             int matchCount = 0;
     
             if (page != null) {
-                ArrayList<String[]> pageRecords = page.getRecords(); // Assuming you have a method to get page records
+                ArrayList<String[]> pageRecords = page.getRecords(); 
     
                 for (String[] record : pageRecords) {
                     boolean match = true;
                     for (int j = 0; j < cols.length && match; j++) {
-                        int columnIndex = -1;
-    
-                        // Find the corresponding column index
-                        for (int k = 0; k < columnNames.length; k++) {
-                            if (columnNames[k].equalsIgnoreCase(cols[j])) {
-                                columnIndex = k;
-                                break;
-                            }
-                        }
-    
-                        if (columnIndex == -1 || !record[columnIndex].equalsIgnoreCase(vals[j])) {
+                        int index = columnindex[j];
+                        if (!record[index].equalsIgnoreCase(vals[j])) {
                             match = false;
                             break;
                         }
@@ -115,7 +105,7 @@ public class Table implements Serializable
                     }
                 }
     
-                // If we have matching records for this page, add it to the trace
+                
                 if (matchCount > 0) {
                     if (recordsPerPage.length() > 1) {
                         recordsPerPage.append(", ");
@@ -125,26 +115,25 @@ public class Table implements Serializable
             }
         }
     
-        recordsPerPage.append("]"); // Close the string representation
+        recordsPerPage.append("]"); 
     
 
-        // Format the condition part of the trace
         String s = Arrays.toString(cols) + "->" + Arrays.toString(vals);
-        lastTrace = "Select condition: " + s + ", Records per page:" + recordsPerPage.toString() +
-                    ", records:" + totalMatch + ", execution time (mil):" + (System.currentTimeMillis()-startTime);
-    
-        // Append to full trace
-        fullTrace += lastTrace + "\n";
-    
+        trace.add("Select condition:" + s + ", Records per page:" + recordsPerPage.toString() +", records:" + totalMatch + ", execution time (mil):" + (System.currentTimeMillis()-startTime));    
         return result;
     }
     
     
     public String getFullTrace(){
-        return fullTrace+"Pages Count: "+currentPageCount+", Records Count: "+recordCount;
+        String s = "";
+        for(int i = 0; i < trace.size(); i++){
+            s += trace.get(i)+"\n";
+        }
+        return s + "Pages Count: " + currentPageCount + ", Records Count: " + recordCount ;
+
     }
 
     public String getLastTrace(){
-        return lastTrace;
+        return trace.get(trace.size()-1);
     }
 }
