@@ -686,11 +686,11 @@ public class DBAppTests
 		//record2: [a5, b1, c2]
 		//record3: [a7, b1, c1]
 		//record4: [a9, b1, c0]
-		assertTrue("Conditional selection should return the correct number of records. Expected: 80, Found: " + tableSelect0.size(), tableSelect0.size() == 80 || tableSelect0.size() == 79);
+		assertTrue("Conditional selection should return the correct number of records.", tableSelect0.size() == 80);
 		ArrayList<String> tableSelectStrings0 = new ArrayList<String>();
 		for(int i = 0; i < tableSelect0.size(); i++)
 			tableSelectStrings0.add(Arrays.toString(tableSelect0.get(i)));
-		assertTrue("Conditional selection should return the correct inserted record: [a1, b1, c1]", tableSelectStrings0.contains(Arrays.toString(new String[]{"a1","b1","c1"})));
+		assertTrue("Conditional selection should return the correct inserted record.", tableSelectStrings0.contains(Arrays.toString(new String[]{"a1","b1","c1"})));
 		assertTrue("Conditional selection should return the correct inserted record.", tableSelectStrings0.contains(Arrays.toString(new String[]{"a3","b1","c0"})));
 		assertTrue("Conditional selection should return the correct inserted record.", tableSelectStrings0.contains(Arrays.toString(new String[]{"a5","b1","c2"})));
 		assertTrue("Conditional selection should return the correct inserted record.", tableSelectStrings0.contains(Arrays.toString(new String[]{"a7","b1","c1"})));
@@ -729,12 +729,7 @@ public class DBAppTests
 		//record2: [a4, b0]
 		//record3: [a6, b0]
 		//record4: [a8, b0]
-		System.out.println("tableSelect1.size() = " + tableSelect1.size());
-		System.out.println("tableSelect1 = " + tableSelect1.get(0)[0]);
-		System.out.println("tableSelect1 = " + tableSelect1.get(0)[1]);
-		System.out.println("tableSelect1 = " + tableSelect1.get(1)[0]);
-		System.out.println("tableSelect1 = " + tableSelect1.get(1)[1]);
-		assertTrue("Conditional selection should return the correct number of records.", tableSelect1.size() == 163 || tableSelect1.size() == 162);
+		assertTrue("Conditional selection should return the correct number of records.", tableSelect1.size() == 163);
 		ArrayList<String> tableSelectStrings1 = new ArrayList<String>();
 		for(int i = 0; i < tableSelect1.size(); i++)
 			tableSelectStrings1.add(Arrays.toString(tableSelect1.get(i)));
@@ -777,8 +772,7 @@ public class DBAppTests
 		//record2: [a5, b1, c2, d1, e0, f5]
 		//record3: [a7, b1, c1, d3, e2, f1]
 		//record4: [a9, b1, c0, d1, e4, f3]
-		System.out.println("tableSelect2.size() = " + tableSelect2.size());
-		assertTrue("Conditional selection should return the correct number of records.", tableSelect2.size() == 211 || tableSelect2.size() == 210);
+		assertTrue("Conditional selection should return the correct number of records.", tableSelect2.size() == 211);
 		ArrayList<String> tableSelectStrings2 = new ArrayList<String>();
 		for(int i = 0; i < tableSelect2.size(); i++)
 			tableSelectStrings2.add(Arrays.toString(tableSelect2.get(i)));
@@ -821,7 +815,7 @@ public class DBAppTests
 		//record2: [a7, b1, c1, d3, e2, f1]
 		//record3: [a10, b0, c1, d2, e0, f4]
 		//record4: [a13, b1, c1, d1, e3, f1]
-		assertTrue("Conditional selection should return the correct number of records.", tableSelect3.size() == 85 || tableSelect3.size() == 84);
+		assertTrue("Conditional selection should return the correct number of records.", tableSelect3.size() == 85);
 		ArrayList<String> tableSelectStrings3 = new ArrayList<String>();
 		for(int i = 0; i < tableSelect3.size(); i++)
 			tableSelectStrings3.add(Arrays.toString(tableSelect3.get(i)));
@@ -864,7 +858,7 @@ public class DBAppTests
 		//record2: [a5, b1, c2, d1, e0]
 		//record3: [a7, b1, c1, d3, e2]
 		//record4: [a9, b1, c0, d1, e4]
-		assertTrue("Conditional selection should return the correct number of records.", tableSelect4.size() == 55 || tableSelect4.size() == 54);
+		assertTrue("Conditional selection should return the correct number of records.", tableSelect4.size() == 55);
 		ArrayList<String> tableSelectStrings4 = new ArrayList<String>();
 		for(int i = 0; i < tableSelect4.size(); i++)
 			tableSelectStrings4.add(Arrays.toString(tableSelect4.get(i)));
@@ -987,7 +981,7 @@ public class DBAppTests
 	
 		int pageSelectPointer11 = genRandNum(pageCount1-1);
 		int recordSelectPointer11 = genRandNum(DBApp.dataPageSize-1);
-		if(pageSelectPointer11==pageCount1-1)		
+		if(pageSelectPointer11==pageCount1-1)
 			recordSelectPointer11 = genRandNum((39%DBApp.dataPageSize)-1);
 		DBApp.select("c6", pageSelectPointer11,recordSelectPointer11);
 	
@@ -1041,12 +1035,6 @@ public class DBAppTests
 	
 		String selectTrace1 = DBApp.getFullTrace("c6");
 		String[] selectTraceArray1 = selectTrace1.split("\n");
-		System.out.println("selectTraceArray1.length = " + selectTraceArray1.length);
-		for(int i=0;i<selectTraceArray1.length;i++)
-		{
-			System.out.println("selectTraceArray1["+i+"] = " + selectTraceArray1[i]);
-		}
-		System.out.println(selectTrace1);
 		assertTrue("Full trace should show the correct number of operations performed on a table.", selectTraceArray1.length == 56);
 		assertTrue("Last line in the full trace should report the number of pages and records correctly.", selectTraceArray1[selectTraceArray1.length-1].equals("Pages Count: "+pageCount1+", Records Count: 39"));
 		//--------------------------------------------------------------------------
