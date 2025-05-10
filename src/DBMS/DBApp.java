@@ -1,8 +1,12 @@
 package DBMS;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 
+import javafx.scene.control.Tab;
+
+@SuppressWarnings("unused")
 public class DBApp {
 	static int dataPageSize = 2;
 
@@ -50,20 +54,75 @@ public class DBApp {
 		return res;
 	}
 
-	public static void recoverRecords(String tableName, ArrayList<String[]> missing) {
+	public static ArrayList<String[]> validateRecords(String tableName) {
 
+		Table t = FileManager.loadTable(tableName);
+		ArrayList<String[]> res = t.select(); // all records cuurrently in the table
+		return t.missingRecords(res);
+	}
+
+	public static void recoverRecords(String tableName, ArrayList<String[]> missing) {
+		Table t = FileManager.loadTable(tableName);
+		t.recoverRecords(missing);
+		FileManager.storeTable(tableName, t);
 	}
 
 	public static void createBitMapIndex(String tableName, String colName) {
-
+		Table t = FileManager.loadTable(tableName);
+		BitmapIndex b = new BitmapIndex(t, colName);
+		FileManager.storeTableIndex(tableName, colName, b);
 	}
 
 	public static String getValueBits(String tableName, String colName, String value) {
-		return "";
+		BitmapIndex b = FileManager.loadTableIndex(tableName, colName);
+		String res = b.getValueBits(value);
+
+		return res;
 	}
 
 	public static ArrayList<String[]> selectIndex(String tableName, String[] cols, String[] vals) {
-		return new ArrayList<>();
+		Table t = FileManager.loadTable(tableName);
+		ArrayList<String[]> result = new ArrayList<String[]>();
+		int IndexSize = 0;
+		for (int i = 0; i < cols.length; i++) {
+			BitmapIndex b = FileManager.loadTableIndex(tableName, cols[i]);
+			if (b != null) {
+				IndexSize++;
+			}
+		}
+		if (IndexSize == cols.length) {
+			String bits = "";
+			for(int i = 0; i < cols.length; i++) {
+				BitmapIndex b = FileManager.loadTableIndex(tableName, cols[i]);
+				String x = b.getValueBits(vals[i]);
+				if(bits.length() == 0)
+					bits = x;
+				else{
+					String s = "";
+					for(int j = 0; j < bits.length(); j++){
+						if(bits.charAt(j) == '1' && x.charAt(j) == '1')
+							s += "1";
+						else
+							s += "0";
+					}
+					bits = s;
+				}
+				
+				
+			}
+			ArrayList<String[]> res = t.select();
+			for(int i = 0; i < bits.length(); i++){
+				if(bits.charAt(i) == '1'){
+					result.add(res.get(i));
+				}
+			}
+			
+		}
+		else if(IndexSize == 1){
+
+		}
+
+		return result;
 	}
 
 	public static void main(String[] args) throws IOException {
