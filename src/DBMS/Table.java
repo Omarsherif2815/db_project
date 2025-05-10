@@ -12,6 +12,8 @@ public class Table implements Serializable {
 	private int pageCount;
 	private int recordsCount;
 	private ArrayList<String> trace;
+	private int IndexNumber;
+	private ArrayList<String> IndexIndices;
 
 	public Table(String name, String[] columnsNames) {
 		super();
@@ -20,6 +22,8 @@ public class Table implements Serializable {
 		this.trace = new ArrayList<String>();
 		this.trace.add("Table created name:" + name + ", columnsNames:"
 				+ Arrays.toString(columnsNames));
+		this.IndexNumber = 0;
+		this.IndexIndices = new ArrayList<String>();
 	}
 
 	@Override
@@ -190,5 +194,53 @@ public class Table implements Serializable {
 			}
 		}
 		return -1;
+	}
+
+	public void updateIndexNumber() {
+		this.IndexNumber++;
+	}
+
+	public int getIndexNumber() {
+		return IndexNumber;
+	}
+
+	public void setIndexNumber(String columnName) {
+		for(int i = 0; i < columnsNames.length; i++) {
+			if (columnsNames[i].equals(columnName)) {
+				IndexIndices.add(columnsNames[i]);
+				return;
+			}
+		}
+	}
+
+	public ArrayList<String> getIndexIndices() {
+		return IndexIndices;
+	}
+
+	public ArrayList<String[]> tableRecords() {
+		ArrayList<String[]> res = new ArrayList<String[]>();
+		for (int i = 0; i < pageCount; i++) {
+			Page p = FileManager.loadTablePage(this.name, i);
+			res.addAll(p.select());
+		}
+		return res;
+	}
+
+	public ArrayList<String[]> getRecordsWithCondition(String[] cols, String[] vals) {
+		String[] cond = fixCond(cols, vals);
+		ArrayList<ArrayList<Integer>> pagesResCount = new ArrayList<ArrayList<Integer>>();
+		ArrayList<String[]> res = new ArrayList<String[]>();
+		for (int i = 0; i < pageCount; i++) {
+			Page p = FileManager.loadTablePage(this.name, i);
+			ArrayList<String[]> pRes = p.select(cond);
+			if (pRes.size() > 0) {
+				ArrayList<Integer> pr = new ArrayList<Integer>();
+				pr.add(i);
+				pr.add(pRes.size());
+				pagesResCount.add(pr);
+				res.addAll(pRes);
+			}
+		}
+		return res;
 	}
 }
