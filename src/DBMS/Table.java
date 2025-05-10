@@ -4,136 +4,145 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-@SuppressWarnings("unused")
 public class Table implements Serializable
 {
-    static ArrayList<String> tableNames = new ArrayList<String>();
 	private String name;
-    private String[] columnNames;
-    private int currentPageCount = 0;
-    ArrayList<String> trace = new ArrayList<String>();
-    private int recordCount = 0;
-    
-    public Table(String name, String[] columnNames)
-    {
-        this.name = name;
-        this.columnNames = columnNames;
-        tableNames.add(name);
-        trace.add("Table created name:"+name+", columnsNames:"+Arrays.toString(columnNames));
-    }
-    
-    public void insert(String[] record)
-    {
-        long startTime = System.currentTimeMillis();
-        Page page = null;
-        if(currentPageCount != 0)
-            page = FileManager.loadTablePage(name, currentPageCount-1);
-        if(page == null || page.isFull()){
-            Page p = new Page();
-            FileManager.storeTablePage(name, currentPageCount, p);
-            currentPageCount++;
-            page = p;
-        }
-        page.insert(record);
-        recordCount++;
-        FileManager.storeTablePage(name, currentPageCount-1, page);
-        trace.add("Inserted:"+Arrays.toString(record)+", at page number:"+ (currentPageCount-1) +", execution time (mil):"+ (System.currentTimeMillis()-startTime)); 
-        
-    }
-    
-    public ArrayList<String[]> getRecords(){
-        long startTime = System.currentTimeMillis(); 
-        ArrayList<String[]> result = new ArrayList<String[]>();
-        
-        for(int i = 0 ; i < currentPageCount; i++){
-            Page p = FileManager.loadTablePage(name, i);
-            if(p!=null)
-                result.addAll(p.getRecords());
-        }
-        trace.add("Select all pages:"+currentPageCount+", records:"+recordCount+", execution time (mil):"+(System.currentTimeMillis()-startTime));
-        return result;
-    }
-    
-    public ArrayList<String[]> select(int pageNumber, int recordNumber){
-        long startTime = System.currentTimeMillis();
-        Page page = FileManager.loadTablePage(name, pageNumber);
-        ArrayList<String[]> result = new ArrayList<String[]>();
-        if(page!=null){
-            result.add(page.getRecordByNumber(recordNumber)); 
-        }
-        trace.add("Select pointer page:"+pageNumber+", record:"+recordNumber+", total output count:"+result.size()+", execution time (mil):"+(System.currentTimeMillis()-startTime));
+	private String[] columnsNames;
+	private int pageCount;
+	private int recordsCount;
+	private ArrayList<String> trace;
+	
+	public Table(String name, String[] columnsNames) 
+	{
+		super();
+		this.name = name;
+		this.columnsNames = columnsNames;
+		this.trace = new ArrayList<String>();
+		this.trace.add("Table created name:" + name + ", columnsNames:"
+				+ Arrays.toString(columnsNames));
+	}
 
-        return result;
-    }
-    
-    public ArrayList<String[]> select(String[] cols, String[] vals) {
-        long startTime = System.currentTimeMillis();
-    
-        ArrayList<String[]> result = new ArrayList<>();
-        StringBuilder recordsPerPage = new StringBuilder("["); 
-        int totalMatch = 0;
-        int[] columnindex = new int[cols.length];
-        for(int i = 0; i < cols.length; i++) {
-            for(int j = 0; j < columnNames.length; j++) {
-                if (columnNames[j].equalsIgnoreCase(cols[i])) {
-                    columnindex[i] = j;
-                    break;
-                }
-            }
-        }
-        for (int i = 0; i < currentPageCount; i++) {
-            Page page = FileManager.loadTablePage(name, i);
-            int matchCount = 0;
-    
-            if (page != null) {
-                ArrayList<String[]> pageRecords = page.getRecords(); 
-    
-                for (String[] record : pageRecords) {
-                    boolean match = true;
-                    for (int j = 0; j < cols.length && match; j++) {
-                        int index = columnindex[j];
-                        if (!record[index].equalsIgnoreCase(vals[j])) {
-                            match = false;
-                            break;
-                        }
-                    }
-    
-                    if (match) {
-                        result.add(record);
-                        matchCount++;
-                        totalMatch++;
-                    }
-                }
-    
-                
-                if (matchCount > 0) {
-                    if (recordsPerPage.length() > 1) {
-                        recordsPerPage.append(", ");
-                    }
-                    recordsPerPage.append("[" + i + ", " + matchCount + "]");
-                }
-            }
-        }
-    
-        recordsPerPage.append("]"); 
-    
 
-        String s = Arrays.toString(cols) + "->" + Arrays.toString(vals);
-        trace.add("Select condition:" + s + ", Records per page:" + recordsPerPage.toString() +", records:" + totalMatch + ", execution time (mil):" + (System.currentTimeMillis()-startTime));    
-        return result;
-    }
-    
-    
-    public String getFullTrace(){
-        String s = "";
-        for(int i = 0; i < trace.size(); i++){
-            s += trace.get(i)+"\n";
-        }
-        return s + "Pages Count: " + currentPageCount + ", Records Count: " + recordCount ;
+	@Override
+	public String toString() 
+	{
+		return "Table [name=" + name + ", columnsNames="
+				+ Arrays.toString(columnsNames) + ", pageCount=" + pageCount
+				+ ", recordsCount=" + recordsCount + "]";
+	}
+	
+	public void insert(String []record)
+	{
+		long startTime = System.currentTimeMillis();
+		Page current = FileManager.loadTablePage(this.name, pageCount-1);
+		if(current==null||!current.insert(record))
+		{
+			current = new Page();
+			current.insert(record);
+			pageCount++;
+		}
+		FileManager.storeTablePage(this.name, pageCount-1, current);
+		recordsCount++;
+		long stopTime = System.currentTimeMillis();
+		this.trace.add("Inserted:"+ Arrays.toString(record)+", at page number:"+(pageCount-1)
+				+", execution time (mil):"+(stopTime - startTime));
+	}
+	
+	public String[] fixCond(String[] cols, String[] vals)
+	{
+		String[] res = new String[columnsNames.length];
+		for(int i=0;i<res.length;i++)
+		{
+			for(int j=0;j<cols.length;j++)
+			{
+				if(columnsNames[i].equals(cols[j]))
+				{
+					res[i]=vals[j];
+				}
+			}
+		}
+		return res;
+	}
+	
+	public ArrayList<String []> select(String[] cols, String[] vals)
+	{
+		String[] cond = fixCond(cols, vals);
+		String tracer ="Select condition:"+Arrays.toString(cols)+"->"+Arrays.toString(vals);
+		ArrayList<ArrayList<Integer>> pagesResCount = new ArrayList<ArrayList<Integer>>();
+		ArrayList<String []> res = new ArrayList<String []>();
+		long startTime = System.currentTimeMillis();
+		for(int i=0;i<pageCount;i++)
+		{
+			Page p = FileManager.loadTablePage(this.name, i);
+			ArrayList<String []> pRes = p.select(cond);
+			if(pRes.size()>0)
+			{
+				ArrayList<Integer> pr = new ArrayList<Integer>();
+				pr.add(i);
+				pr.add(pRes.size());
+				pagesResCount.add(pr);
+				res.addAll(pRes);
+			}
+		}
+		long stopTime = System.currentTimeMillis();
+		tracer +=", Records per page:" + pagesResCount+", records:"+res.size()
+				+", execution time (mil):"+(stopTime - startTime);
+		this.trace.add(tracer);
+		return res;
+	}
+	
+	public ArrayList<String []> select(int pageNumber, int recordNumber)
+	{
+		String tracer ="Select pointer page:"+pageNumber+", record:"+recordNumber;
+		ArrayList<String []> res = new ArrayList<String []>();
+		long startTime = System.currentTimeMillis();
+		Page p = FileManager.loadTablePage(this.name, pageNumber);
+		ArrayList<String []> pRes = p.select(recordNumber);
+		if(pRes.size()>0)
+		{
+			res.addAll(pRes);
+		}
+		long stopTime = System.currentTimeMillis();
+		tracer+=", total output count:"+res.size()
+				+", execution time (mil):"+(stopTime - startTime);
+		this.trace.add(tracer);
+		return res;
+	}
+	
+	
+	public ArrayList<String []> select()
+	{
+		ArrayList<String []> res = new ArrayList<String []>();
+		long startTime = System.currentTimeMillis();
+		for(int i=0;i<pageCount;i++)
+		{
+			Page p = FileManager.loadTablePage(this.name, i);
+			res.addAll(p.select());
+		}
+		long stopTime = System.currentTimeMillis();
+		this.trace.add("Select all pages:" + pageCount+", records:"+recordsCount
+				+", execution time (mil):"+(stopTime - startTime));
+		return res;
+	}
+	
+	
+	
+	
+	
+	
+	public String getFullTrace() 
+	{
+		String res = "";
+		for(int i=0;i<this.trace.size();i++)
+		{
+			res+=this.trace.get(i)+"\n";
+		}
+		return res+ "Pages Count: " + pageCount + ", Records Count: " + recordsCount;
+	}
+	
+	public String getLastTrace() 
+	{
+		return this.trace.get(this.trace.size()-1);
+	}
 
-    }
-
-    public String getLastTrace(){
-        return trace.get(trace.size()-1);
-    }
 }
