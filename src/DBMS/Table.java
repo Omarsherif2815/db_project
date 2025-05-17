@@ -12,7 +12,6 @@ public class Table implements Serializable {
 	private int pageCount;
 	private int recordsCount;
 	private ArrayList<String> trace;
-	private int IndexNumber;
 	private ArrayList<String> IndexIndices;
 
 	public Table(String name, String[] columnsNames) {
@@ -22,7 +21,6 @@ public class Table implements Serializable {
 		this.trace = new ArrayList<String>();
 		this.trace.add("Table created name:" + name + ", columnsNames:"
 				+ Arrays.toString(columnsNames));
-		this.IndexNumber = 0;
 		this.IndexIndices = new ArrayList<String>();
 	}
 
@@ -165,7 +163,7 @@ public class Table implements Serializable {
 				String[] recordArray = recordString.split(", ");
 				for (String[] rec : missing) {
 					if (Arrays.equals(recordArray, rec)) {
-						int number = getPageNumber(recordString);
+						int number = getPageNumber(record);
 						Page p = FileManager.loadTablePage(this.name, number);
 						if (p != null) {
 							p.insert(recordArray);
@@ -173,8 +171,7 @@ public class Table implements Serializable {
 						} else {
 							Page newPage = new Page();
 							newPage.insert(recordArray);
-							FileManager.storeTablePage(this.name, pageCount, newPage);
-							pageCount++;
+							FileManager.storeTablePage(this.name, number, newPage);
 						}
 					}
 				}
@@ -183,8 +180,21 @@ public class Table implements Serializable {
 	}
 
 	private int getPageNumber(String recordString) {
-		int startIndex = recordString.indexOf("number:");
-		return Integer.parseInt(recordString.substring(startIndex + 1));
+		String marker = "at page number:";
+		int startIndex = recordString.indexOf(marker);
+		if (startIndex == -1) {
+			throw new IllegalArgumentException("Could not find 'at page number:' in: " + recordString);
+		}
+
+		startIndex += marker.length();
+
+		// Read until next comma or end of line
+		int endIndex = recordString.indexOf(',', startIndex);
+		if (endIndex == -1)
+			endIndex = recordString.length();
+
+		String numberStr = recordString.substring(startIndex, endIndex).trim();
+		return Integer.parseInt(numberStr); // should return 0 for your example
 	}
 
 	public int getColumnIndex(String columnName) {
@@ -196,16 +206,21 @@ public class Table implements Serializable {
 		return -1;
 	}
 
-	public void updateIndexNumber() {
-		this.IndexNumber++;
-	}
-
-	public int getIndexNumber() {
-		return IndexNumber;
+	public int getIndexNumber(String[] cols) {
+		int count = 0;
+		for (String column : cols) {
+			for (int j = 0; j < columnsNames.length; j++) {
+				if (column == columnsNames[j]) {
+					count++;
+					break;
+				}
+			}
+		}
+		return 0;
 	}
 
 	public void setIndexNumber(String columnName) {
-		for(int i = 0; i < columnsNames.length; i++) {
+		for (int i = 0; i < columnsNames.length; i++) {
 			if (columnsNames[i].equals(columnName)) {
 				IndexIndices.add(columnsNames[i]);
 				return;
@@ -221,7 +236,8 @@ public class Table implements Serializable {
 		ArrayList<String[]> res = new ArrayList<String[]>();
 		for (int i = 0; i < pageCount; i++) {
 			Page p = FileManager.loadTablePage(this.name, i);
-			res.addAll(p.select());
+			if (p != null)
+				res.addAll(p.select());
 		}
 		return res;
 	}
@@ -242,5 +258,9 @@ public class Table implements Serializable {
 			}
 		}
 		return res;
+	}
+
+	public int getColumnLength() {
+		return columnsNames.length;
 	}
 }

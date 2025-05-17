@@ -1,5 +1,6 @@
 package DBMS;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -19,6 +20,12 @@ public class DBApp {
 		Table t = FileManager.loadTable(tableName);
 		t.insert(record);
 		FileManager.storeTable(tableName, t);
+		ArrayList<String> indices = t.getIndexIndices();
+		for (String index : indices) {
+			BitmapIndex b = FileManager.loadTableIndex(tableName, index);
+			b.updateTable(t);
+			FileManager.storeTableIndex(tableName, index, b);
+		}
 	}
 
 	public static ArrayList<String[]> select(String tableName) {
@@ -55,9 +62,10 @@ public class DBApp {
 	}
 
 	public static ArrayList<String[]> validateRecords(String tableName) {
-
+		long startTime = System.currentTimeMillis();
 		Table t = FileManager.loadTable(tableName);
-		ArrayList<String[]> res = t.tableRecords(); // all records cuurrently in the table
+		ArrayList<String[]> res = t.tableRecords();
+		long endTime = System.currentTimeMillis();
 		return t.missingRecords(res);
 	}
 
@@ -69,19 +77,17 @@ public class DBApp {
 
 	public static void createBitMapIndex(String tableName, String colName) {
 		Table t = FileManager.loadTable(tableName);
-		if(t == null) {
+		if (t == null) {
 			System.out.println("Table not found");
 			return;
 		}
 		BitmapIndex b = new BitmapIndex(t, colName);
-		t.updateIndexNumber();
 		t.setIndexNumber(colName);
 		FileManager.storeTable(tableName, t);
 		FileManager.storeTableIndex(tableName, colName, b);
 	}
 
 	public static String getValueBits(String tableName, String colName, String value) {
-		System.out.println("Getting the bitmap of the value " + value + " from the column " + colName);
 		BitmapIndex b = FileManager.loadTableIndex(tableName, colName);
 		String res = b.getValueBits(value);
 
@@ -91,7 +97,7 @@ public class DBApp {
 	public static ArrayList<String[]> selectIndex(String tableName, String[] cols, String[] vals) {
 		Table t = FileManager.loadTable(tableName);
 		ArrayList<String[]> result = new ArrayList<String[]>();
-		int IndexSize = t.getIndexNumber();
+		int IndexSize = t.getIndexNumber(cols);
 		if (IndexSize == cols.length) { // all columns are indexed
 			String bits = "";
 			for (int i = 0; i < cols.length; i++) {
@@ -208,61 +214,35 @@ public class DBApp {
 		insert("student", r2);
 		String[] r3 = { "3", "stud3", "CS", "2", "2.4" };
 		insert("student", r3);
-		createBitMapIndex("student", "gpa");
-		createBitMapIndex("student", "major");
-		System.out.println("Bitmap of the value of CS from the major index:") ;
-		System.out.println("Bitmap of the value of CS from the major index:" + getValueBits("student", "major", "CS"));
-		System.out.println("Bitmap of the value of 1.2 from the gpa index:" + getValueBits("student", "gpa", "1.2"));
 		String[] r4 = { "4", "stud4", "CS", "9", "1.2" };
 		insert("student", r4);
 		String[] r5 = { "5", "stud5", "BI", "4", "3.5" };
 		insert("student", r5);
-		System.out.println("After new insertions:");
-		System.out.println("Bitmap of the value of CS from the major index:" + getValueBits("student", "major", "CS"));
-		System.out.println("Bitmap of the value of 1.2 from the gpa index:" + getValueBits("student", "gpa", "1.2"));
-		System.out.println("Output of selection using index when all columns ofthe select conditions are indexed:");
-		ArrayList<String[]> result1 = selectIndex("student", new String[] { "major", "gpa" },
-				new String[] { "CS", "1.2" });
-		for (String[] array : result1) {
-			for (String str : array) {
-				System.out.print(str + " ");
-			}
-			System.out.println();
+		//////// This is the code used to delete pages from the table
+		System.out.println("File Manager trace before deleting pages: " + FileManager.trace());
+		String path = FileManager.class.getResource("FileManager.class").toString();
+		File directory = new File(path.substring(6, path.length() - 17) +
+				File.separator
+				+ "Tables//student" + File.separator);
+		File[] contents = directory.listFiles();
+		int[] pageDel = { 0, 2 };
+		for (int i = 0; i < pageDel.length; i++) {
+			contents[pageDel[i]].delete();
 		}
-		System.out.println("Last trace of the table: " + getLastTrace("student"));
-		System.out.println("--------------------------------");
+		//////// End of deleting pages code
 
-		System.out.println(
-				"Output of selection using index when only one column of the columns of the select conditions are indexed:");
-		ArrayList<String[]> result2 = selectIndex("student", new String[] { "major", "semester" },
-				new String[] { "CS", "5" });
-		for (String[] array : result2) {
-			for (String str : array) {
-				System.out.print(str + " ");
-			}
-			System.out.println();
-		}
-		System.out.println("Last trace of the table: " + getLastTrace("student"));
+		System.out.println("File Manager trace after deleting pages: " + FileManager.trace());
+		ArrayList<String[]> tr = validateRecords("student");
+		System.out.println("Missing records count: " + tr.size());
+		recoverRecords("student", tr);
 		System.out.println("--------------------------------");
-		System.out.println(
-				"Output of selection using index when some of the columns of the select conditions are indexed:");
-		ArrayList<String[]> result3 = selectIndex("student", new String[] { "major", "semester", "gpa" },
-				new String[] { "CS", "5", "0.9" });
-		for (String[] array : result3) {
-			for (String str : array) {
-				System.out.print(str + " ");
-			}
-			System.out.println();
-		}
-		System.out.println("Last trace of the table: " + getLastTrace("student"));
+		System.out.println("Recovering the missing records.");
+		tr = validateRecords("student");
+		System.out.println("Missing record count: " + tr.size());
+		System.out.println("File Manager trace after recovering missing records: " + FileManager.trace());
 		System.out.println("--------------------------------");
-
-		System.out.println("Full Trace of the table:");
+		System.out.println("Full trace of the table: ");
 		System.out.println(getFullTrace("student"));
-		System.out.println("--------------------------------");
-		System.out.println("The trace of the Tables Folder:");
-		System.out.println(FileManager.trace());
-
 	}
 
 }

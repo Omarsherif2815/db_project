@@ -1,14 +1,19 @@
 package DBMS;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
-public class BitmapIndex {
+public class BitmapIndex implements Serializable {
     Table table;
     String columnName;
 
     BitmapIndex(Table table, String columnName) {
         this.table = table;
         this.columnName = columnName;
+    }
+
+    public void updateTable(Table t) {
+        this.table = t;
     }
 
     public String getValueBits(String value) {
