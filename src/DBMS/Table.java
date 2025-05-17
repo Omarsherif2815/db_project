@@ -116,7 +116,7 @@ public class Table implements Serializable {
 		for (int i = 0; i < this.trace.size(); i++) {
 			res += this.trace.get(i) + "\n";
 		}
-		return res + "Pages Count: " + pageCount + ", Records Count: " + recordsCount;
+		return res + "Pages Count: " + pageCount + ", Records Count: " + recordsCount+ ", Indexed Columns: "+ IndexIndices.toString();
 	}
 
 	public String getLastTrace() {
@@ -153,7 +153,8 @@ public class Table implements Serializable {
 
 	}
 
-	public void recoverRecords(ArrayList<String[]> missing) {
+	public String recoverRecords(ArrayList<String[]> missing) {
+		ArrayList<Integer> s = new ArrayList<>();
 		ArrayList<String> allRecords = trace;
 		for (String record : allRecords) {
 			if (record.startsWith("Inserted:")) {
@@ -164,6 +165,8 @@ public class Table implements Serializable {
 				for (String[] rec : missing) {
 					if (Arrays.equals(recordArray, rec)) {
 						int number = getPageNumber(record);
+						if (!s.contains(number))
+							s.add(number);
 						Page p = FileManager.loadTablePage(this.name, number);
 						if (p != null) {
 							p.insert(recordArray);
@@ -177,6 +180,8 @@ public class Table implements Serializable {
 				}
 			}
 		}
+
+		return s.toString();
 	}
 
 	private int getPageNumber(String recordString) {
@@ -209,23 +214,14 @@ public class Table implements Serializable {
 	public int getIndexNumber(String[] cols) {
 		int count = 0;
 		for (String column : cols) {
-			for (int j = 0; j < columnsNames.length; j++) {
-				if (column == columnsNames[j]) {
-					count++;
-					break;
-				}
-			}
+			if (IndexIndices.contains(column))
+				count++;
 		}
-		return 0;
+		return count;
 	}
 
 	public void setIndexNumber(String columnName) {
-		for (int i = 0; i < columnsNames.length; i++) {
-			if (columnsNames[i].equals(columnName)) {
-				IndexIndices.add(columnsNames[i]);
-				return;
-			}
-		}
+		IndexIndices.add(columnName);
 	}
 
 	public ArrayList<String> getIndexIndices() {
@@ -262,5 +258,9 @@ public class Table implements Serializable {
 
 	public int getColumnLength() {
 		return columnsNames.length;
+	}
+
+	public void updateTrace(String s) {
+		this.trace.add(s);
 	}
 }
