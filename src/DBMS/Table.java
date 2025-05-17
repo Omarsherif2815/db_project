@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 
 @SuppressWarnings("unused")
 public class Table implements Serializable {
@@ -116,7 +117,8 @@ public class Table implements Serializable {
 		for (int i = 0; i < this.trace.size(); i++) {
 			res += this.trace.get(i) + "\n";
 		}
-		return res + "Pages Count: " + pageCount + ", Records Count: " + recordsCount+ ", Indexed Columns: "+ IndexIndices.toString();
+		return res + "Pages Count: " + pageCount + ", Records Count: " + recordsCount + ", Indexed Columns: "
+				+ IndexIndices.toString();
 	}
 
 	public String getLastTrace() {
@@ -222,6 +224,7 @@ public class Table implements Serializable {
 
 	public void setIndexNumber(String columnName) {
 		IndexIndices.add(columnName);
+		Collections.sort(IndexIndices); 
 	}
 
 	public ArrayList<String> getIndexIndices() {
