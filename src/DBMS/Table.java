@@ -224,7 +224,7 @@ public class Table implements Serializable {
 
 	public void setIndexNumber(String columnName) {
 		IndexIndices.add(columnName);
-		Collections.sort(IndexIndices); 
+		Collections.sort(IndexIndices);
 	}
 
 	public ArrayList<String> getIndexIndices() {
@@ -265,5 +265,41 @@ public class Table implements Serializable {
 
 	public void updateTrace(String s) {
 		this.trace.add(s);
+	}
+
+	public ArrayList<String[]> getValues(String[] cols, String[] vals) {
+		String[] cond = fixCond(cols, vals);
+		ArrayList<ArrayList<Integer>> pagesResCount = new ArrayList<ArrayList<Integer>>();
+		ArrayList<String[]> res = new ArrayList<String[]>();
+		for (int i = 0; i < pageCount; i++) {
+			Page p = FileManager.loadTablePage(this.name, i);
+			ArrayList<String[]> pRes = p.select(cond);
+			if (pRes.size() > 0) {
+				ArrayList<Integer> pr = new ArrayList<Integer>();
+				pr.add(i);
+				pr.add(pRes.size());
+				pagesResCount.add(pr);
+				res.addAll(pRes);
+			}
+		}
+		return res;
+	}
+
+	public ArrayList<String[]> selectIndex(String[] cols, String[] vals) {
+		String[] cond = fixCond(cols, vals);
+		ArrayList<ArrayList<Integer>> pagesResCount = new ArrayList<ArrayList<Integer>>();
+		ArrayList<String[]> res = new ArrayList<String[]>();
+		for (int i = 0; i < pageCount; i++) {
+			Page p = FileManager.loadTablePage(this.name, i);
+			ArrayList<String[]> pRes = p.select(cond);
+			if (pRes.size() > 0) {
+				ArrayList<Integer> pr = new ArrayList<Integer>();
+				pr.add(i);
+				pr.add(pRes.size());
+				pagesResCount.add(pr);
+				res.addAll(pRes);
+			}
+		}
+		return res;
 	}
 }

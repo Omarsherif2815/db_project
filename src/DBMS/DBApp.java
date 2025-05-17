@@ -167,7 +167,12 @@ public class DBApp {
 			FileManager.storeTable(tableName, t);
 
 		} else if (IndexSize == 0) { // no index
-			result = t.select(cols, vals);
+			result = t.selectIndex(cols, vals);
+			t.updateTrace("Select index condition:" + Arrays.toString(cols) + "->" + Arrays.toString(vals)
+					+ ", Non Indexed: " + Arrays.toString(cols)
+					+ ", Final count: " + result.size() + ", execution time (mil):"
+					+ (System.currentTimeMillis() - start));
+			FileManager.storeTable(tableName, t);
 		} else { // some columns are indexed
 			ArrayList<String> Bitmap = t.getIndexIndices();
 			String bits = "";
