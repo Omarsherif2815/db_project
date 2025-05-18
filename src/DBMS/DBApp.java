@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 
 import javafx.scene.control.Tab;
 
@@ -103,8 +104,13 @@ public class DBApp {
 	public static ArrayList<String[]> selectIndex(String tableName, String[] cols, String[] vals) {
 		long start = System.currentTimeMillis();
 		Table t = FileManager.loadTable(tableName);
-		ArrayList<String[]> result = new ArrayList<String[]>();
+		ArrayList<String[]> result = new ArrayList<>();
+
+		// Sort the input columns and corresponding values lex order together
+		sortColsAndVals(cols, vals);
+
 		int IndexSize = t.getIndexNumber(cols);
+
 		if (IndexSize == cols.length) { // all columns are indexed
 			String bits = "";
 			for (int i = 0; i < cols.length; i++) {
@@ -114,107 +120,170 @@ public class DBApp {
 					bits = x;
 				else
 					bits = bitWiseAnd(bits, x);
-
 			}
 			result = getRecords(bits, t);
+
+			// The indexed columns here are all the condition columns (sorted already)
 			t.updateTrace("Select index condition:" + Arrays.toString(cols) + "->" + Arrays.toString(vals)
-					+ ", Indexed columns: " + t.getIndexIndices().toString() + ", Indexed selection count: "
-					+ result.size()
-					+ ", Final count: " + result.size() + ", execution time (mil):"
-					+ (System.currentTimeMillis() - start));
+					+ ", Indexed columns: " + Arrays.toString(cols)
+					+ ", Indexed selection count: " + result.size()
+					+ ", Final count: " + result.size()
+					+ ", execution time (mil):" + (System.currentTimeMillis() - start));
 			FileManager.storeTable(tableName, t);
 
 		} else if (IndexSize == 1) { // only one index
-			int index = -1;
-			ArrayList<String> columnNames = t.getIndexIndices();
-			for (int i = 0; i < cols.length; i++) {
-				for (int j = 0; j < columnNames.size(); j++) {
-					if (columnNames.get(j).equals(cols[i])) {
-						index = j;
-						break;
-					}
-				}
-			}
-			String column = t.getIndexIndices().get(index);
-			BitmapIndex b = FileManager.loadTableIndex(tableName, column);
-			int resIndex = -1;
-			for (int i = 0; i < cols.length; i++) {
-				if (column.equals(cols[i])) {
-					resIndex = i;
+			ArrayList<String> indexed = new ArrayList<>();
+			String indexedColumn = null;
+
+			// Find which one is indexed
+			ArrayList<String> tableIndexedCols = t.getIndexIndices();
+			for (String c : cols) {
+				if (tableIndexedCols.contains(c)) {
+					indexedColumn = c;
 					break;
 				}
 			}
-			String x = b.getValueBits(vals[resIndex]);
-			String[] columns = new String[cols.length - 1];
-			String[] values = new String[cols.length - 1];
-			int newArrayIndex = 0;
+			if (indexedColumn == null) {
+				// no indexed column found, fallback to no index case
+				result = t.selectIndex(cols, vals);
+				t.updateTrace("Select index condition:" + Arrays.toString(cols) + "->" + Arrays.toString(vals)
+						+ ", Non Indexed: " + Arrays.toString(cols)
+						+ ", Final count: " + result.size() + ", execution time (mil):"
+						+ (System.currentTimeMillis() - start));
+				FileManager.storeTable(tableName, t);
+				return result;
+			}
+			indexed.add(indexedColumn);
+
+			BitmapIndex b = FileManager.loadTableIndex(tableName, indexedColumn);
+
+			// Get the value for the indexed column
+			int idxVal = -1;
 			for (int i = 0; i < cols.length; i++) {
-				if (!cols[i].equals(column)) {
-					columns[newArrayIndex] = cols[i];
-					values[newArrayIndex++] = vals[i];
+				if (cols[i].equals(indexedColumn)) {
+					idxVal = i;
+					break;
 				}
 			}
-			ArrayList<String> indexed = new ArrayList<String>();
-			indexed.add(column);
-			ArrayList<String[]> records = getRecords(x, t);
-			ArrayList<String[]> r = t.getRecordsWithCondition(columns, values);
-			result = AndingRecords(records, r);
+			String bitString = b.getValueBits(vals[idxVal]);
+
+			// Prepare non-indexed columns and values arrays
+			ArrayList<String> nonIndexedColsList = new ArrayList<>();
+			ArrayList<String> nonIndexedValsList = new ArrayList<>();
+			for (int i = 0; i < cols.length; i++) {
+				if (!cols[i].equals(indexedColumn)) {
+					nonIndexedColsList.add(cols[i]);
+					nonIndexedValsList.add(vals[i]);
+				}
+			}
+
+			// Sort non-indexed columns and values together before use
+			String[] nonIndexedCols = nonIndexedColsList.toArray(new String[0]);
+			String[] nonIndexedVals = nonIndexedValsList.toArray(new String[0]);
+			sortColsAndVals(nonIndexedCols, nonIndexedVals);
+
+			ArrayList<String[]> recordsFromIndex = getRecords(bitString, t);
+			ArrayList<String[]> recordsWithConditions = t.getRecordsWithCondition(nonIndexedCols, nonIndexedVals);
+			result = AndingRecords(recordsFromIndex, recordsWithConditions);
+
 			t.updateTrace("Select index condition:" + Arrays.toString(cols) + "->" + Arrays.toString(vals)
-					+ ", Indexed columns: " + indexed.toString() + ", Indexed selection count: "
-					+ records.size() + ", Non Indexed: " + Arrays.toString(columns)
-					+ ", Final count: " + result.size() + ", execution time (mil):"
-					+ (System.currentTimeMillis() - start));
+					+ ", Indexed columns: " + Arrays.toString(indexed.toArray(new String[0]))
+					+ ", Indexed selection count: " + recordsFromIndex.size()
+					+ ", Non Indexed: " + Arrays.toString(nonIndexedCols)
+					+ ", Final count: " + result.size()
+					+ ", execution time (mil):" + (System.currentTimeMillis() - start));
 			FileManager.storeTable(tableName, t);
 
 		} else if (IndexSize == 0) { // no index
 			result = t.selectIndex(cols, vals);
+			// cols and vals already sorted at start
 			t.updateTrace("Select index condition:" + Arrays.toString(cols) + "->" + Arrays.toString(vals)
 					+ ", Non Indexed: " + Arrays.toString(cols)
-					+ ", Final count: " + result.size() + ", execution time (mil):"
-					+ (System.currentTimeMillis() - start));
+					+ ", Final count: " + result.size()
+					+ ", execution time (mil):" + (System.currentTimeMillis() - start));
 			FileManager.storeTable(tableName, t);
+
 		} else { // some columns are indexed
-			ArrayList<String> Bitmap = t.getIndexIndices();
-			String bits = "";
-			ArrayList<String> indexed = new ArrayList<String>();
-			ArrayList<String> valsColumn = new ArrayList<String>();
+			ArrayList<String> tableIndexedCols = t.getIndexIndices();
+			ArrayList<String> indexed = new ArrayList<>();
+			ArrayList<String> indexedVals = new ArrayList<>();
+
+			// Collect indexed columns and their corresponding values
 			for (int i = 0; i < cols.length; i++) {
-				if (Bitmap.contains(cols[i])) {
+				if (tableIndexedCols.contains(cols[i])) {
 					indexed.add(cols[i]);
-					valsColumn.add(vals[i]);
+					indexedVals.add(vals[i]);
 				}
 			}
-			for (int i = 0; i < indexed.size(); i++) {
-				BitmapIndex b = FileManager.loadTableIndex(tableName, indexed.get(i));
-				String x = b.getValueBits(valsColumn.get(i));
+
+			// Sort indexed columns and values together
+			String[] indexedArr = indexed.toArray(new String[0]);
+			String[] indexedValsArr = indexedVals.toArray(new String[0]);
+			sortColsAndVals(indexedArr, indexedValsArr);
+
+			// Compute bits intersection from all indexed conditions
+			String bits = "";
+			for (int i = 0; i < indexedArr.length; i++) {
+				BitmapIndex b = FileManager.loadTableIndex(tableName, indexedArr[i]);
+				String x = b.getValueBits(indexedValsArr[i]);
 				if (i == 0)
 					bits = x;
 				else
 					bits = bitWiseAnd(bits, x);
 			}
-			String[] columns = new String[cols.length - indexed.size()];
-			String[] values = new String[cols.length - indexed.size()];
-			int newColumnsIndex = 0;
+
+			// Prepare non-indexed columns and values
+			ArrayList<String> nonIndexedColsList = new ArrayList<>();
+			ArrayList<String> nonIndexedValsList = new ArrayList<>();
 			for (int i = 0; i < cols.length; i++) {
 				if (!indexed.contains(cols[i])) {
-					columns[newColumnsIndex] = cols[i];
-					values[newColumnsIndex++] = vals[i];
+					nonIndexedColsList.add(cols[i]);
+					nonIndexedValsList.add(vals[i]);
 				}
 			}
-			ArrayList<String[]> records = getRecords(bits, t);
-			System.out.println(records.toString());
-			ArrayList<String[]> r = t.getRecordsWithCondition(columns, values);
-			System.out.println(r.toString());
-			result = AndingRecords(records, r);
+
+			String[] nonIndexedCols = nonIndexedColsList.toArray(new String[0]);
+			String[] nonIndexedVals = nonIndexedValsList.toArray(new String[0]);
+			sortColsAndVals(nonIndexedCols, nonIndexedVals);
+
+			ArrayList<String[]> recordsFromIndex = getRecords(bits, t);
+			ArrayList<String[]> recordsWithConditions = t.getRecordsWithCondition(nonIndexedCols, nonIndexedVals);
+			result = AndingRecords(recordsFromIndex, recordsWithConditions);
+
 			t.updateTrace("Select index condition:" + Arrays.toString(cols) + "->" + Arrays.toString(vals)
-					+ ", Indexed columns: " + indexed.toString() + ", Indexed selection count: "
-					+ records.size() + ", Non Indexed: " + Arrays.toString(columns)
-					+ ", Final count: " + result.size() + ", execution time (mil):"
-					+ (System.currentTimeMillis() - start));
+					+ ", Indexed columns: " + Arrays.toString(indexedArr)
+					+ ", Indexed selection count: " + recordsFromIndex.size()
+					+ ", Non Indexed: " + Arrays.toString(nonIndexedCols)
+					+ ", Final count: " + result.size()
+					+ ", execution time (mil):" + (System.currentTimeMillis() - start));
 			FileManager.storeTable(tableName, t);
 		}
 
 		return result;
+	}
+
+	// Helper class for paired sorting
+	private static class ColValPair {
+		String col;
+		String val;
+
+		ColValPair(String c, String v) {
+			col = c;
+			val = v;
+		}
+	}
+
+	// Sort columns and values lexicographically together
+	private static void sortColsAndVals(String[] cols, String[] vals) {
+		ArrayList<ColValPair> pairs = new ArrayList<>();
+		for (int i = 0; i < cols.length; i++) {
+			pairs.add(new ColValPair(cols[i], vals[i]));
+		}
+		Collections.sort(pairs, (a, b) -> a.col.compareTo(b.col));
+		for (int i = 0; i < pairs.size(); i++) {
+			cols[i] = pairs.get(i).col;
+			vals[i] = pairs.get(i).val;
+		}
 	}
 
 	public static boolean checkRecords(String[] record1, String[] record2) {
@@ -273,34 +342,59 @@ public class DBApp {
 		insert("student", r2);
 		String[] r3 = { "3", "stud3", "CS", "2", "2.4" };
 		insert("student", r3);
+		createBitMapIndex("student", "gpa");
+		createBitMapIndex("student", "major");
+		System.out.println("Bitmap of the value of CS from the major index: " + getValueBits("student", "major", "CS"));
+		System.out.println("Bitmap of the value of 1.2 from the gpa index: " + getValueBits("student", "gpa", "1.2"));
 		String[] r4 = { "4", "stud4", "CS", "9", "1.2" };
 		insert("student", r4);
 		String[] r5 = { "5", "stud5", "BI", "4", "3.5" };
 		insert("student", r5);
-		//////// This is the code used to delete pages from the table
-		System.out.println("File Manager trace before deleting pages: " + FileManager.trace());
-		String path = FileManager.class.getResource("FileManager.class").toString();
-		File directory = new File(path.substring(6, path.length() - 17) +
-				File.separator
-				+ "Tables//student" + File.separator);
-		File[] contents = directory.listFiles();
-		int[] pageDel = { 0, 2 };
-		for (int i = 0; i < pageDel.length; i++) {
-			contents[pageDel[i]].delete();
+		System.out.println("After new insertions:");
+		System.out.println("Bitmap of the value of CS from the major index: " + getValueBits("student", "major", "CS"));
+		System.out.println("Bitmap of the value of 1.2 from the gpa index: " + getValueBits("student", "gpa", "1.2"));
+		System.out.println("Output of selection using index when all columns of the select conditions are indexed:");
+		ArrayList<String[]> result1 = selectIndex("student", new String[] { "major", "gpa" },
+				new String[] { "CS", "1.2" });
+		for (String[] array : result1) {
+			for (String str : array) {
+				System.out.print(str + " ");
+			}
+			System.out.println();
 		}
-		//////// End of deleting pages code
+		System.out.println("Last trace of the table: " + getLastTrace("student"));
+		System.out.println("--------------------------------");
 
-		System.out.println("File Manager trace after deleting pages: " + FileManager.trace());
-		ArrayList<String[]> tr = validateRecords("student");
-		System.out.println("Missing records count: " + tr.size());
-		recoverRecords("student", tr);
+		System.out.println(
+				"Output of selection using index when only one column of the columns of the select conditions are indexed:");
+		ArrayList<String[]> result2 = selectIndex("student", new String[] { "major", "semester" },
+				new String[] { "CS", "5" });
+		for (String[] array : result2) {
+			for (String str : array) {
+				System.out.print(str + " ");
+			}
+			System.out.println();
+		}
+		System.out.println("Last trace of the table: " + getLastTrace("student"));
 		System.out.println("--------------------------------");
-		System.out.println("Recovering the missing records.");
-		tr = validateRecords("student");
-		System.out.println("Missing record count: " + tr.size());
-		System.out.println("File Manager trace after recovering missing records: " + FileManager.trace());
+
+		System.out.println(
+				"Output of selection using index when some of the columns of the select conditions are indexed:");
+		ArrayList<String[]> result3 = selectIndex("student", new String[] { "major", "semester", "gpa" },
+				new String[] { "CS", "5", "0.9" });
+		for (String[] array : result3) {
+			for (String str : array) {
+				System.out.print(str + " ");
+			}
+			System.out.println();
+		}
+		System.out.println("Last trace of the table: " + getLastTrace("student"));
 		System.out.println("--------------------------------");
-		System.out.println("Full trace of the table: ");
+
+		System.out.println("Full Trace of the table:");
 		System.out.println(getFullTrace("student"));
+		System.out.println("--------------------------------");
+		System.out.println("The trace of the Tables Folder:");
+		System.out.println(FileManager.trace());
 	}
 }
